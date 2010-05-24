@@ -7,7 +7,7 @@ use SWISH::Prog::KSx::Searcher;
 use KinoSearch::Object::BitVector;
 use KinoSearch::Search::HitCollector::BitCollector;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 sub init_searcher {
     my $self     = shift;
@@ -33,7 +33,7 @@ sub build_facets {
         bit_vector => $bit_vec, );
 
     $ks_searcher->collect(
-        query     => $query_parser->parse("$query"),
+        query     => $query_parser->parse("$query")->as_ks_query(),
         collector => $collector
     );
 
