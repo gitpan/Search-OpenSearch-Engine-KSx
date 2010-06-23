@@ -7,7 +7,7 @@ use SWISH::Prog::KSx::Searcher;
 use KinoSearch::Object::BitVector;
 use KinoSearch::Search::HitCollector::BitCollector;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 sub init_searcher {
     my $self     = shift;
@@ -50,7 +50,8 @@ sub build_facets {
 
             # unique-ify
             my %val = map { $_ => $_ }
-                split( m/\003/, $doc->{$name} );
+                split( m/\003/,
+                ( defined $doc->{$name} ? $doc->{$name} : '' ) );
             for my $value ( keys %val ) {
                 $facets{$name}->{$value}++;
             }
@@ -66,6 +67,51 @@ sub build_facets {
         }
     }
     return \%facet_struct;
+}
+
+sub process_result {
+    my ( $self, %args ) = @_;
+    my $result       = $args{result};
+    my $hiliter      = $args{hiliter};
+    my $XMLer        = $args{XMLer};
+    my $snipper      = $args{snipper};
+    my $fields       = $args{fields};
+    my $apply_hilite = $args{apply_hilite};
+
+    my $title   = $XMLer->escape( $result->title   || '' );
+    my $summary = $XMLer->escape( $result->summary || '' );
+
+    # \003 is the record-delimiter in Swish3
+    # we ignore it for title and summary, but split
+    # all other fields into an array to preserve
+    # multiple values.
+    $title   =~ s/\003/ /g;
+    $summary =~ s/\003/ /g;
+
+    my %res = (
+        score   => $result->score,
+        uri     => $result->uri,
+        mtime   => $result->mtime,
+        title   => ( $apply_hilite ? $hiliter->light($title) : $title ),
+        summary => (
+              $apply_hilite
+            ? $hiliter->light( $snipper->snip($summary) )
+            : $summary
+        ),
+    );
+    for my $field (@$fields) {
+        my $str = $XMLer->escape( $result->get_property($field) || '' );
+        if ( !$apply_hilite or $self->no_hiliting($field) ) {
+            $res{$field} = [ split( m/\003/, $str ) ];
+        }
+        else {
+            $res{$field} = [
+                map { $hiliter->light( $snipper->snip($_) ) }
+                    split( m/\003/, $str )
+            ];
+        }
+    }
+    return \%res;
 }
 
 1;
@@ -87,6 +133,10 @@ Returns a SWISH::Prog::KSx::Searcher object.
 =head2 build_facets( I<query>, I<results> )
 
 Returns hash ref of facets from I<results>. See Search::OpenSearch::Engine.
+
+=head2 process_result( I<args> )
+
+Overrides base method to preserve multi-value fields as arrays.
 
 =head1 AUTHOR
 
