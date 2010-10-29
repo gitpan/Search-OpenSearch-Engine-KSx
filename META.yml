@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               Search-OpenSearch-Engine-KSx
-version:            0.05
+version:            0.06
 abstract:           KinoSearch server with OpenSearch results
 author:
     - Peter Karman <karman@cpan.org>
@@ -12,7 +12,7 @@ build_requires:
     ExtUtils::MakeMaker:  0
 requires:
     Search::OpenSearch:  0.09
-    SWISH::Prog::KSx:    0.08
+    SWISH::Prog::KSx:    0.16
     Test::More:          0
 no_index:
     directory:
